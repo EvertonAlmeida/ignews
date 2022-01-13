@@ -2,7 +2,6 @@ import { faunaDB } from "../../../services/fauna";
 import { query as q } from "faunadb";
 import { stripe } from "../../../services/stripe";
 import Stripe from "stripe";
-import { Subscription } from "faunadb/src/types/Stream";
 
 type User = {
 	ref: {
@@ -52,12 +51,31 @@ const createSubscription = (subscriptionData: SubscriptionData) => {
 	);
 }
 
+const replaceSubscription = (subscriptionData: SubscriptionData, subscriptionId: string) => {
+	return faunaDB.query(
+		q.Replace(
+			q.Select(
+				"ref",
+				q.Get(
+					q.Match(
+						q.Index('subscription_by_id'),
+						subscriptionId,
+					)
+				)
+			),
+			{ data: subscriptionData}
+		)
+	)
+}
+
 export const saveSubscription = async (
 	subscriptionId: string,
-	customerId: string
+	customerId: string,
+	createAction = false
 ) => {
 	const userRef = await getUserRefByStripeCustomerId(customerId);
 	const subscription = await stripe.subscriptions.retrieve(subscriptionId)
 	const subscriptionData = createSubscriptionData(subscription, userRef);
-	await createSubscription(subscriptionData);
+	if(createAction) await createSubscription(subscriptionData);
+	await replaceSubscription(subscriptionData, subscriptionId);
 }

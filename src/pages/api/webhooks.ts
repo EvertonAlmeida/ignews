@@ -6,13 +6,11 @@ import { saveSubscription } from "./_lib/manageSubscription";
 
 const buffer = async (readable: Readable) => {
 	const chunks = [];
-
 	for await (const chunk of readable) {
 		chunks.push(
 			typeof chunk === "string" ? Buffer.from(chunk) : chunk
 		);
 	}
-
 	return Buffer.concat(chunks);
 }
 
@@ -23,7 +21,9 @@ export const config = {
 }
 
 const releventEvents = new Set([
-	'checkout.session.completed'
+	'checkout.session.completed',
+	'customer.subscription.updated',
+	'customer.subscription.deleted',
 ])
 
 export default async function (req: NextApiRequest, res: NextApiResponse) {
@@ -34,7 +34,6 @@ export default async function (req: NextApiRequest, res: NextApiResponse) {
 
 	const buf = await buffer(req);
 	const secret = req.headers['stripe-signature'];
-
 	let event: Stripe.Event;
 
 	try {
@@ -47,13 +46,22 @@ export default async function (req: NextApiRequest, res: NextApiResponse) {
 	if (releventEvents.has(type)) {
 		try {
 			switch (type) {
+				case 'customer.subscription.created':
+				case 'customer.subscription.updated':
+				case 'customer.subscription.deleted':
+					const subscription = event.data.object as Stripe.Subscription
+					saveSubscription(
+						subscription.id,
+						subscription.customer.toString(),
+						type === 'customer.subscription.created'
+					);
+					break;
 				case 'checkout.session.completed':
-
 					const checkoutSession = event.data.object as Stripe.Checkout.Session
-
 					saveSubscription(
 						checkoutSession.subscription.toString(),
 						checkoutSession.customer.toString(),
+						true,
 					);
 					break;
 				default :
