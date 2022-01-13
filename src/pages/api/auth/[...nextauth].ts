@@ -3,7 +3,7 @@ import { query as q } from 'faunadb'
 import NextAuth from "next-auth"
 import GithubProvider from "next-auth/providers/github"
 
-import { faunaDb } from '../../../services/faunaDb';
+import { faunaDB } from '../../../services/fauna';
 
 export default NextAuth({
   providers: [
@@ -21,7 +21,7 @@ export default NextAuth({
 	async signIn({ user, account, profile, email, credentials }) {
 		const { email: userEmail } = user;
 		try {
-			await faunaDb.query(
+			await faunaDB.query(
 				q.If(
 					q.Not(
 						q.Exists(
