@@ -16,7 +16,6 @@ interface PostProps {
 }
 
 export default function Post({ post }: PostProps) {
-	console.log({post});
 	return (
 		<>
 			<Head>
@@ -53,8 +52,6 @@ export const getServerSideProps: GetServerSideProps = async ({ req, params }) =>
 			year: 'numeric',
 		})
 	}
-
-	console.log('postsssss ', {post})
 
 	return {
 		props: {
